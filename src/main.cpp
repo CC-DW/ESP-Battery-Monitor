@@ -1,17 +1,25 @@
 //Library Includes
 #include <Arduino.h>
 #include <driver/rtc_io.h>
+
+/*Optional config definitions*/
+#define DEBUG_MODE                // Enable serial debug at 9600 baud
+#define WAKEUP_SOURCE_TIMER       // Enable timer to wake from deep sleep
+#define WAKEUP_SOURCE_GPIO        // Enable GPIO to wake from deep sleep
+
 /*Required config definitions*/
+#ifdef  WAKEUP_SOURCE_TIMER
 #define uS_TO_M_FACTOR 60000000ULL // Conversion factor for micro seconds to minutes */
 #define TIME_TO_SLEEP  1          // Time ESP32 will go to sleep (in minutes) */
+#endif
+#ifdef  WAKEUP_SOURCE_GPIO
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)  // 2 ^ GPIO_NUMBER in hex
 #define USE_EXT0_WAKEUP          1               // 1 = EXT0 wakeup, 0 = EXT1 wakeup
 #define WAKEUP_GPIO              GPIO_NUM_33     // Only RTC IO are allowed - ESP32 Pin example
-/*Optional config definitions*/
-#define DEBUG_MODE                 // Enable serial debug at 9600 baud
+#endif
 
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR int last = 0;
+
 #ifdef DEBUG_MODE
 /*
 DEBUG FUNCTION
@@ -43,21 +51,27 @@ void setup() {
     Serial.println("Boot number: " + String(bootCount));
     print_wakeup_reason();
   #endif
-//Configure wakeup timer period
+#ifdef WAKEUP_SOURCE_TIMER
+  //Configure wakeup timer period
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_M_FACTOR);
-  esp_sleep_enable_ext0_wakeup(WAKEUP_GPIO, 1);  //1 = High, 0 = Low
-  // Configure pullup/downs via RTCIO to tie wakeup pins to inactive level during deepsleep.
-  // EXT0 resides in the same power domain (RTC_PERIPH) as the RTC IO pullup/downs.
-  // No need to keep that power domain explicitly, unlike EXT1.
+#endif
+#ifdef WAKEUP_SOURCE_GPIO
+  //Configure wakeup GPIO
+  esp_sleep_enable_ext0_wakeup(WAKEUP_GPIO, HIGH);
   rtc_gpio_pullup_dis(WAKEUP_GPIO);
   rtc_gpio_pulldown_en(WAKEUP_GPIO);
-
+#endif
   #ifdef DEBUG_MODE
-    Serial.println("Setup ESP32 to sleep for " + String(TIME_TO_SLEEP) + " Minute(s)");
+    #ifdef WAKEUP_SOURCE_TIMER
+      Serial.println("Setup ESP32 to sleep for " + String(TIME_TO_SLEEP) + " Minute(s)");
+    #endif
+    #ifdef WAKEUP_SOURCE_GPIO
+      Serial.println("Setup ESP32 to sleep until HIGH input on pin " + String(WAKEUP_GPIO));
+    #endif
     Serial.println("Going to sleep now");
     Serial.flush();
   #endif
-  //Deep sleep for configured period
+  //Enter deep sleep until
   esp_deep_sleep_start();
 }
 
