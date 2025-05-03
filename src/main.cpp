@@ -1,24 +1,17 @@
 //Library Includes
 #include <Arduino.h>
 #include <driver/rtc_io.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <config.h>
 
-/*Optional config definitions*/
-#define DEBUG_MODE                // Enable serial debug at 9600 baud
-#define WAKEUP_SOURCE_TIMER       // Enable timer to wake from deep sleep
-#define WAKEUP_SOURCE_GPIO        // Enable GPIO to wake from deep sleep
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
-/*Required config definitions*/
-#ifdef  WAKEUP_SOURCE_TIMER
-#define uS_TO_M_FACTOR 60000000ULL // Conversion factor for micro seconds to minutes */
-#define TIME_TO_SLEEP  1          // Time ESP32 will go to sleep (in minutes) */
-#endif
-#ifdef  WAKEUP_SOURCE_GPIO
-#define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)  // 2 ^ GPIO_NUMBER in hex
-#define USE_EXT0_WAKEUP          1               // 1 = EXT0 wakeup, 0 = EXT1 wakeup
-#define WAKEUP_GPIO              GPIO_NUM_33     // Only RTC IO are allowed - ESP32 Pin example
-#endif
+RTC_DATA_ATTR u_int bootCount = 0;
 
-RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR u_int batteryVoltage = 0;
 
 #ifdef DEBUG_MODE
 /*
@@ -46,6 +39,34 @@ void setup() {
 
   //Increment boot number
   ++bootCount;
+  #ifdef OLED_DISPLAY
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+      #ifdef DEBUG_MODE
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;); // Loop until connected
+      #endif
+    }
+  #endif
+
+  batteryVoltage = analogReadMilliVolts(BATTERY_GPIO);
+  
+  #ifdef DEBUG_MODE
+    Serial.println("Raw Voltage on battery GPIO " + String(BATTERY_GPIO) + ": "+ batteryVoltage + "mA");
+  #endif
+  #ifdef OLED_DISPLAY
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 10);
+    display.println("Voltage:");
+    display.println(String(batteryVoltage) + "mA");
+    display.display();
+    delay(2000);
+    display.display();
+    delay(2000); // Pause for 2 seconds
+  #endif
+
   #ifdef DEBUG_MODE
     //Print current boot count and waekeup reason
     Serial.println("Boot number: " + String(bootCount));
