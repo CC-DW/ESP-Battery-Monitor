@@ -6,12 +6,13 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <config.h>
+#include <get_Voltage.h>
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
 RTC_DATA_ATTR u_int bootCount = 0;
 
-RTC_DATA_ATTR u_int batteryVoltage = 0;
+RTC_DATA_ATTR uint16_t batteryVoltage = 0;
 
 #ifdef DEBUG_MODE
 /*
@@ -49,7 +50,7 @@ void setup() {
     }
   #endif
 
-  batteryVoltage = analogReadMilliVolts(BATTERY_GPIO);
+  batteryVoltage = get_raw_voltage(BATTERY_GPIO);
   
   #ifdef DEBUG_MODE
     Serial.println("Raw Voltage on battery GPIO " + String(BATTERY_GPIO) + ": "+ batteryVoltage + "mA");
