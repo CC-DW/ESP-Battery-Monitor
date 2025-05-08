@@ -13,6 +13,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 RTC_DATA_ATTR u_int bootCount = 0;
 
 RTC_DATA_ATTR uint16_t batteryVoltage = 0;
+RTC_DATA_ATTR uint16_t batteryRawVoltage = 0;
 
 #ifdef DEBUG_MODE
 /*
@@ -49,21 +50,26 @@ void setup() {
       #endif
     }
   #endif
+  #ifdef DEBUG_MODE
+  pinMode(DEBUG_HIGH_PIN, OUTPUT);
+  pinMode(DEBUG_LOW_PIN, OUTPUT);
+  digitalWrite(DEBUG_HIGH_PIN, HIGH);
+  digitalWrite(DEBUG_LOW_PIN, LOW);
+  #endif
 
-  batteryVoltage = get_raw_voltage(BATTERY_GPIO);
+  batteryRawVoltage = get_raw_voltage(BATTERY_GPIO);
+  batteryVoltage = get_mv_voltage(BATTERY_GPIO);
   
   #ifdef DEBUG_MODE
     Serial.println("Raw Voltage on battery GPIO " + String(BATTERY_GPIO) + ": "+ batteryVoltage + "mA");
   #endif
   #ifdef OLED_DISPLAY
     display.clearDisplay();
-    display.setTextSize(2);
+    display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(0, 10);
-    display.println("Voltage:");
-    display.println(String(batteryVoltage) + "mA");
-    display.display();
-    delay(2000);
+    display.println("Voltage: " + String(batteryVoltage) + "mv");
+    display.println("(" + String(batteryRawVoltage) + ")");
     display.display();
     delay(2000); // Pause for 2 seconds
   #endif

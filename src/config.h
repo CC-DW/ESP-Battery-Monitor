@@ -21,6 +21,11 @@
 //OLED Display
 #ifdef OLED_DISPLAY
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
 #define OLED_RESET     -1
+#endif
+//Debug Mode
+#ifdef DEBUG_MODE
+#define DEBUG_HIGH_PIN      GPIO_NUM_19 // VCC Reference
+#define DEBUG_LOW_PIN       GPIO_NUM_18 // GND Reference
 #endif
